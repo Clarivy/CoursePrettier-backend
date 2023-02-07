@@ -68,5 +68,5 @@ class CourseCalender:
         run_result = subprocess.run(["node", "merged.js"], capture_output=True)
         if run_result.returncode != 0:
             raise Exception(run_result.stderr)
-        course_list = run_result.stdout.decode('utf-8').split('\n')
+        course_list = run_result.stdout.decode('utf-8').splitlines()
         return course_list
