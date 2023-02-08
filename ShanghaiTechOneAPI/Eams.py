@@ -54,9 +54,9 @@ class CourseCalender:
         self.emas: Eams = emas
         self.session = emas.session
 
-    async def get_courseinfo(self, output_file: str = 'courseinfo.json', temp_file: str = "courseinfo.js") -> list[str]:
+    async def get_courseinfo(self, output_file: str = 'courseinfo.json', temp_file: str = "courseinfo.js") -> None:
         await self.emas.enter("https://eams.shanghaitech.edu.cn/eams/courseTableForStd.action")
-        async with self.session.post("https://eams.shanghaitech.edu.cn/eams/courseTableForStd!courseTable.action?ignoreHead=1&setting.kind=std&startWeek=&semester.id=202&ids=7083&tutorRedirectstudentId=7083") as response:
+        async with self.session.post("https://eams.shanghaitech.edu.cn/eams/courseTableForStd!courseTable.action?ignoreHead=1&setting.kind=std&startWeek=&semester.id=203&ids=7083&tutorRedirectstudentId=7083") as response:
             soup = BeautifulSoup(await response.read(), 'html.parser')
             with open(temp_file, "w", encoding='utf-8') as f:
                 f.write(soup.find_all("script")[-2].text)
