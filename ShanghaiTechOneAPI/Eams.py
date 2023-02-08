@@ -65,8 +65,6 @@ class CourseCalender:
             for f in ['./HackHeader.js', temp_file, 'HackFooter.js']:
                 with open(f, 'rb') as fd:
                     shutil.copyfileobj(fd, wfd)
-        run_result = subprocess.run(["node", "merged.js"], capture_output=True)
+        run_result = subprocess.run(["node", "merged.js"], env={"OUTPUT_PATH": 'courseinfo.json'}, capture_output=True)
         if run_result.returncode != 0:
             raise Exception(run_result.stderr)
-        course_list = run_result.stdout.decode('utf-8').splitlines()
-        return course_list
