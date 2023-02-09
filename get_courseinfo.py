@@ -15,7 +15,9 @@ async def main():
         eams = Eams(cred)
         await eams.login()
         cc = CourseCalender(eams)
-        courseinfo = await cc.get_courseinfo()
+        courseinfo = await cc.get_courseinfo(
+            output_file='./data/courseinfo.json'
+        )
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())

@@ -2,6 +2,7 @@ import logging
 import re
 import subprocess
 import shutil
+import os
 from typing import Optional, Dict, Any, List
 
 import pyjson5
@@ -54,17 +55,18 @@ class CourseCalender:
         self.emas: Eams = emas
         self.session = emas.session
 
-    async def get_courseinfo(self, output_file: str = 'courseinfo.json', temp_file: str = "courseinfo.js") -> None:
+    async def get_courseinfo(self, output_file: str, temp_file: str = "./temp/courseinfo.js") -> None:
         await self.emas.enter("https://eams.shanghaitech.edu.cn/eams/courseTableForStd.action")
         async with self.session.post("https://eams.shanghaitech.edu.cn/eams/courseTableForStd!courseTable.action?ignoreHead=1&setting.kind=std&startWeek=&semester.id=203&ids=7083&tutorRedirectstudentId=7083") as response:
             soup = BeautifulSoup(await response.read(), 'html.parser')
             with open(temp_file, "w", encoding='utf-8') as f:
                 f.write(soup.find_all("script")[-2].text)
 
-        with open('merged.js', 'wb') as wfd:
+        with open('./merged.js', 'wb') as wfd:
             for f in ['./HackHeader.js', temp_file, 'HackFooter.js']:
                 with open(f, 'rb') as fd:
                     shutil.copyfileobj(fd, wfd)
-        run_result = subprocess.run(["node", "merged.js"], env={"OUTPUT_PATH": 'courseinfo.json'}, capture_output=True)
+        run_result = subprocess.run(["node", "merged.js"], env={"OUTPUT_PATH": output_file}, capture_output=True)
+        os.remove("merged.js")
         if run_result.returncode != 0:
             raise Exception(run_result.stderr)
