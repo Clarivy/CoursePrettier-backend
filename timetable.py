@@ -28,13 +28,14 @@ class ICS_Exporter():
 		Forked from https://github.com/junyilou/python-ical-timetable and wrapped as helper class 
 	"""
 	
-	def __init__(self, start_monday:list[int]) -> None:
+	def __init__(self, start_monday:list[int], calender_name:str) -> None:
 		"""
 		start_monday:
 			the first day of the semaster in the format of [YY, MM, DD], eg. [2023, 2, 6]
 		"""
-		self.get_geo = lambda classroom: f"LOCATION:{classroom}\n"
+		self.get_geo = lambda classroom: f"LOCATION:{classroom}"
 		self.start_monday = start_monday
+		self.calender_name = calender_name
 		self.classes = []
 	
 	def parse_json(self, input_file:str) -> None:
@@ -70,25 +71,23 @@ class ICS_Exporter():
 								data[data_index - 1][j]["endTime"] = unit_index + 1
 							course_table[week_index][unit_index].pop(i)
 							break
-			
-
 				
-			for week_index in range(0, WEEK_LEN):
-				for unit_index in range(0, CLASS_NUM):
-					for course in course_table[week_index][unit_index]:
-						if not course.get("endTime"):
-							course["endTime"] = unit_index + 1
-						course_info = [
-							course["courseName"],
-							course["teacherName"],
-							course["roomName"],
-							week_str_to_list(course["vaildWeeks"]),
-							week_index + 1,
-							[unit_index + 1, course["endTime"]]
-						]
-						self.classes.append(course_info)
-						
-				# [Name, Teacher, Location, classWeek, classWeekday, classOrder] = Class 
+		for week_index in range(0, WEEK_LEN):
+			for unit_index in range(0, CLASS_NUM):
+				for course in course_table[week_index][unit_index]:
+					if not course.get("endTime"):
+						course["endTime"] = unit_index + 1
+					course_info = [
+						course["courseName"],
+						course["teacherName"],
+						course["roomName"],
+						week_str_to_list(course["vaildWeeks"]),
+						week_index + 1,
+						[unit_index + 1, course["endTime"]]
+					]
+					self.classes.append(course_info)
+					
+			# [Name, Teacher, Location, classWeek, classWeekday, classOrder] = Class 
 				
 	def export(self, output_file:str) -> None:
 		classTime = [None, *CLASS_TIME]
@@ -102,15 +101,23 @@ class ICS_Exporter():
 			weeks.append(singleWeek)
 		uid_generate = lambda k: md5(k.encode("utf-8")).hexdigest()
 
-		iCal = """BEGIN:VCALENDAR
-		METHOD:PUBLISH
-		VERSION:2.0
-		X-WR-CALNAME:课表
-		X-WR-TIMEZONE:Asia/Shanghai
-		CALSCALE:GREGORIAN
-		BEGIN:VTIMEZONE
-		TZID:Asia/Shanghai
-		END:VTIMEZONE"""
+		iCal = f"""BEGIN:VCALENDAR
+METHOD:PUBLISH
+VERSION:2.0
+X-WR-CALNAME:{self.calender_name}
+X-WR-TIMEZONE:Asia/Shanghai
+PRODID:CoursePrettier
+CALSCALE:GREGORIAN
+BEGIN:VTIMEZONE
+TZID:Asia/Shanghai
+BEGIN:STANDARD
+TZNAME:CST
+TZOFFSETFROM:+0800
+TZOFFSETTO:+0800
+X-LIC-LOCATION:Asia/Shanghai
+END:STANDARD
+END:VTIMEZONE
+"""
 
 		runtime = datetime.now().strftime('%Y%m%dT%H%M%SZ')
 
@@ -123,21 +130,26 @@ class ICS_Exporter():
 				endTime = classTime[classOrder[-1]]
 				classStartTime = classDate + timedelta(minutes = startTime[0] * 60 + startTime[1])
 				classEndTime = classDate + timedelta(minutes = endTime[0] * 60 + endTime[1] + CLASS_PERIOD)
-				Description = f"{Teacher}"
+				Description = f"{className} {Teacher} - 第{timeWeek}周"
 
 				StartTime = classStartTime.strftime('%Y%m%dT%H%M%S')
 				EndTime = classEndTime.strftime('%Y%m%dT%H%M%S')
-				iCal += f"""
-		BEGIN:VEVENT
-		DTEND;TZID=Asia/Shanghai:{EndTime}
-		DESCRIPTION:{Description}
-		UID:{uid_generate(className + StartTime)}
-		DTSTAMP:{runtime}
-		URL;VALUE=URI:
-		SUMMARY:{className}
-		DTSTART;TZID=Asia/Shanghai:{StartTime}
-		{self.get_geo(Location)}
-		END:VEVENT"""
+				iCal += f"""BEGIN:VEVENT
+DTEND;TZID=Asia/Shanghai:{EndTime}
+DESCRIPTION:{Description}
+UID:{uid_generate(className + StartTime)}
+DTSTAMP:{runtime}
+URL;VALUE=URI:
+SUMMARY:{className}
+DTSTART;TZID=Asia/Shanghai:{StartTime}
+{self.get_geo(Location)}
+CATEGORIES:ShanghaiTech,{Teacher},CoursePrettier
+BEGIN:VALARM
+ACTION:AUDIO
+TRIGGER:-PT10M
+END:VALARM
+END:VEVENT
+"""
 
 		iCal += "END:VCALENDAR"
 
@@ -145,6 +157,6 @@ class ICS_Exporter():
 			w.write(iCal)
 
 if __name__ == "__main__":
-	exporter = ICS_Exporter(start_monday=[2023, 2, 6])
-	exporter.parse_json("./courseinfo.json")
-	exporter.export("./test.ics")
+	exporter = ICS_Exporter(start_monday=[2023, 2, 6], calender_name="第二学期")
+	exporter.parse_json("./data/courseinfo.json")
+	exporter.export("./data/test.ics")
