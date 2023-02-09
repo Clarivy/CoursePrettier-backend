@@ -461,3 +461,9 @@ cython_debug/
 
 # Credential file
 credential.json
+
+# VScode
+.vscode/
+
+# data
+data/
