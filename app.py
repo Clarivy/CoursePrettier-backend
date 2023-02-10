@@ -13,7 +13,7 @@ from ShanghaiTechOneAPI.Credential import Credential
 from ShanghaiTechOneAPI.Eams import Eams, CourseCalender
 from timetable import ICS_Exporter
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -26,6 +26,7 @@ app = FastAPI()
 
 origins = [
     "http://localhost:3000",
+    "http://10.20.223.223:3000"
 ]
 
 app.add_middleware(
@@ -87,13 +88,12 @@ async def login(params: LoginParams):
 
 @app.get("/api/ics")
 async def get_ics(id: str):
+    if id == "":
+        return HTTPException(status_code=400, detail="Invalid id")
     home_dir = os.path.join('./data', id)
     table_file = os.path.join(home_dir, 'courseinfo.json')
     if not os.path.exists(table_file):
-        return {
-            "isSuccess": False,
-            "message": "Table not found"
-        }
+        return HTTPException(status_code=404, detail="Table not found")
     ics_file = os.path.join(home_dir, 'courseinfo.ics')
     exporter = ICS_Exporter(start_monday=[2023, 2, 6], calender_name="2022-2023学年2学期")
     exporter.parse_json(table_file)
