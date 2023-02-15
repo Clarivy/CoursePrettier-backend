@@ -6,13 +6,16 @@ from typing import Tuple
 import aiohttp
 from Crypto.Cipher import AES
 from Crypto.Util import Padding
-from aiohttp import ClientSession, CookieJar
+from aiohttp import ClientSession, CookieJar, TCPConnector
+
+from aiohttp.resolver import AsyncResolver
 from bs4 import BeautifulSoup
 
 import pickle
 
 from ShanghaiTechOneAPI.Exception import UsernameOrPasswordError
 
+NAMESERVERS = ["8.8.8.8", "8.8.4.4"]
 
 class LoginToken:
     def __init__(self, soup: BeautifulSoup):
@@ -40,9 +43,13 @@ class Credential:
         else:
             cookie_jar = CookieJar(loop=asyncio.get_event_loop())
             cookie_jar._cookies = pickle.loads(cookie_jar_bytes)
-        self.session: ClientSession = aiohttp.ClientSession(headers={
-            'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"},
-            cookie_jar=cookie_jar)
+        resolver = AsyncResolver(nameservers=NAMESERVERS)
+        connector = TCPConnector(resolver=resolver)
+        self.session: ClientSession = aiohttp.ClientSession(
+            headers={ 'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36"},
+            cookie_jar=cookie_jar,
+            connector=connector
+        )
 
     async def __aenter__(self):
         return self
