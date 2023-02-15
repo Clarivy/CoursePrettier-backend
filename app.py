@@ -1,12 +1,6 @@
-import shutil
 import uuid
-from pathlib import Path
-from tempfile import NamedTemporaryFile
-from typing import Optional
 import os
-import threading
 
-import asyncio
 import json
 
 from ShanghaiTechOneAPI.Credential import Credential
@@ -59,7 +53,8 @@ async def login(params: LoginParams):
             cc = CourseCalender(eams)
             os.makedirs(home_dir, exist_ok=True)
             await cc.get_courseinfo(
-                output_file=table_file
+                output_file=table_file,
+                work_dir=home_dir
             )
     except Exception as e:
         return {

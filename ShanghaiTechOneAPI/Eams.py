@@ -63,21 +63,25 @@ class CourseCalender:
                 return match.group(0).split('"')[-2]
         raise ValueError("Cannot find table id")
 
-    async def get_courseinfo(self, output_file: str, temp_file: str = "./temp/courseinfo.js") -> None:
+    async def get_courseinfo(self, output_file: str, work_dir: str = "./temp/") -> None:
         eams_content = await self.emas.enter("https://eams.shanghaitech.edu.cn/eams/courseTableForStd.action")
         eams_soup = BeautifulSoup(eams_content, 'html.parser')
         table_id = self.find_table_id(eams_soup)
+
+        script_file = os.path.join(work_dir, 'courseinfo.js')
+        merged_file = os.path.join(work_dir, 'merged.js')
+
         async with self.session.post(f"https://eams.shanghaitech.edu.cn/eams/courseTableForStd!courseTable.action?ignoreHead=1&setting.kind=std&startWeek=&semester.id=203&ids={table_id}&tutorRedirectstudentId={table_id}") as response:
             table_soup = BeautifulSoup(await response.read(), 'html.parser')
-            with open(temp_file, "w", encoding='utf-8') as f:
+            with open(script_file, "w", encoding='utf-8') as f:
                 f.write(table_soup.find_all("script")[-2].text)
 
-        with open('./merged.js', 'wb') as wfd:
-            for f in ['./HackHeader.js', temp_file, 'HackFooter.js']:
+        with open(merged_file, 'wb') as wfd:
+            for f in ['./HackHeader.js', script_file, 'HackFooter.js']:
                 with open(f, 'rb') as fd:
                     shutil.copyfileobj(fd, wfd)
-        run_result = subprocess.run(["node", "merged.js"], env={"OUTPUT_PATH": output_file}, capture_output=True)
-        os.remove("merged.js")
+        run_result = subprocess.run(["node", merged_file], env={"OUTPUT_PATH": output_file}, capture_output=True)
+        os.remove(merged_file)
         if run_result.returncode != 0:
             raise Exception(run_result.stderr)
 
